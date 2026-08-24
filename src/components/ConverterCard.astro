@@ -1,0 +1,231 @@
+---
+import { button } from './starwind/button/variants';
+import Input from './starwind/input/Input.astro';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "./starwind/select";
+
+const currencies = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'IDR', name: 'Indonesian Rupiah' },
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'MYR', name: 'Malaysian Ringgit' },
+  { code: 'SGD', name: 'Singapore Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'CNY', name: 'Chinese Yuan' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'KRW', name: 'South Korean Won' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'HKD', name: 'Hong Kong Dollar' },
+  { code: 'NZD', name: 'New Zealand Dollar' },
+  { code: 'PHP', name: 'Philippine Peso' },
+  { code: 'THB', name: 'Thai Baht' },
+  { code: 'TRY', name: 'Turkish Lira' },
+  { code: 'ZAR', name: 'South African Rand' }
+];
+---
+
+<div class="w-full space-y-4 max-w-4xl mx-auto">
+  <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center">
+    <!-- Left Input Group -->
+    <div class="flex gap-2">
+      <Input
+        id="source-amount"
+        type="number"
+        value="1"
+        min="0"
+        step="any"
+        class="w-full text-base font-sans pointer-events-none opacity-50"
+        placeholder="0.00"
+      />
+      <Select id="source-currency" name="source-currency" defaultValue="USD">
+        <SelectTrigger class="w-32 font-sans pointer-events-none opacity-50" placeholder="USD" />
+        <SelectContent>
+          {currencies.map(c => <SelectItem value={c.code}>{c.code}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+
+    <!-- Swap Button -->
+    <div class="flex justify-center">
+      <button 
+        id="swap-btn" 
+        class={button({ variant: 'outline', size: 'icon-sm', class: 'rounded-full shadow-sm hover:scale-105 active:scale-95 transition' })}
+        disabled
+        title="Swap Currencies"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m7 21-4-4 4-4"/>
+          <path d="M3 17h18"/>
+          <path d="m17 3 4 4-4 4"/>
+          <path d="M21 7H3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Right Input Group -->
+    <div class="flex gap-2">
+      <Input
+        id="target-amount"
+        type="number"
+        value="1"
+        min="0"
+        step="any"
+        class="w-full text-base font-sans pointer-events-none opacity-50"
+        placeholder="0.00"
+      />
+      <Select id="target-currency" name="target-currency" defaultValue="EUR">
+        <SelectTrigger class="w-32 font-sans pointer-events-none opacity-50" placeholder="EUR" />
+        <SelectContent>
+          {currencies.map(c => <SelectItem value={c.code}>{c.code}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+
+  <div id="rate-display" class="text-xs text-muted-foreground/80 font-sans text-center min-h-[1rem]"></div>
+</div>
+
+<script>
+  let ratesData: Record<string, number> = {};
+
+  // Helper function to get the actual native input element inside Starwind input wrapper
+  function getInputElement(id: string): HTMLInputElement | null {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    if (el.tagName === 'INPUT') return el as HTMLInputElement;
+    return el.querySelector('input');
+  }
+
+  // Helpers to interact with Starwind Select components programmatically
+
+  function setSelectValue(id: string, value: string) {
+    const root = document.getElementById(id);
+    root?.dispatchEvent(
+      new CustomEvent("starwind:set-value", {
+        detail: { value },
+      })
+    );
+  }
+
+  function enableSelect(id: string) {
+    const root = document.getElementById(id);
+    if (!root) return;
+    const trigger = root.querySelector('[data-slot="select-trigger"]');
+    if (trigger) {
+      trigger.classList.remove('pointer-events-none', 'opacity-50');
+    }
+  }
+
+  let sourceCurrencyCode = 'USD';
+  let targetCurrencyCode = 'EUR';
+
+  const sourceSelect = document.getElementById('source-currency');
+  const targetSelect = document.getElementById('target-currency');
+  const swapBtn = document.getElementById('swap-btn') as HTMLButtonElement;
+  const rateDisplay = document.getElementById('rate-display') as HTMLDivElement;
+
+  function calculate(direction: 'left-to-right' | 'right-to-left') {
+    const srcInput = getInputElement('source-amount');
+    const tgtInput = getInputElement('target-amount');
+
+    if (!srcInput || !tgtInput) return;
+
+    const srcRate = ratesData[sourceCurrencyCode];
+    const tgtRate = ratesData[targetCurrencyCode];
+
+    if (!srcRate || !tgtRate) return;
+
+    if (direction === 'left-to-right') {
+      const val = parseFloat(srcInput.value);
+      if (isNaN(val)) {
+        tgtInput.value = '';
+      } else {
+        const result = val * (tgtRate / srcRate);
+        tgtInput.value = parseFloat(result.toFixed(6)).toString();
+      }
+    } else {
+      const val = parseFloat(tgtInput.value);
+      if (isNaN(val)) {
+        srcInput.value = '';
+      } else {
+        const result = val * (srcRate / tgtRate);
+        srcInput.value = parseFloat(result.toFixed(6)).toString();
+      }
+    }
+
+    const oneSrcInTgt = (tgtRate / srcRate).toFixed(4);
+    rateDisplay.textContent = `1 ${sourceCurrencyCode} = ${oneSrcInTgt} ${targetCurrencyCode}`;
+  }
+
+  window.addEventListener('rates-updated', ((e: CustomEvent) => {
+    ratesData = e.detail.rates;
+
+    // Enable inputs
+    const srcInput = getInputElement('source-amount');
+    const tgtInput = getInputElement('target-amount');
+    if (srcInput) {
+      srcInput.classList.remove('pointer-events-none', 'opacity-50');
+    }
+    if (tgtInput) {
+      tgtInput.classList.remove('pointer-events-none', 'opacity-50');
+    }
+
+    // Enable select components
+    enableSelect('source-currency');
+    enableSelect('target-currency');
+
+    if (swapBtn) swapBtn.removeAttribute('disabled');
+
+    calculate('left-to-right');
+  }) as EventListener);
+
+  // Hook up input events
+  const srcInput = getInputElement('source-amount');
+  const tgtInput = getInputElement('target-amount');
+  srcInput?.addEventListener('input', () => calculate('left-to-right'));
+  tgtInput?.addEventListener('input', () => calculate('right-to-left'));
+
+  // Hook up custom Starwind Select events
+  sourceSelect?.addEventListener('starwind:value-change', ((e: Event) => {
+    const detail = (e as CustomEvent<{ value: string | null }>).detail;
+    if (detail && detail.value) {
+      sourceCurrencyCode = detail.value;
+      calculate('left-to-right');
+    }
+  }) as EventListener);
+
+  targetSelect?.addEventListener('starwind:value-change', ((e: Event) => {
+    const detail = (e as CustomEvent<{ value: string | null }>).detail;
+    if (detail && detail.value) {
+      targetCurrencyCode = detail.value;
+      calculate('left-to-right');
+    }
+  }) as EventListener);
+
+  swapBtn?.addEventListener('click', () => {
+    const activeSrcInput = getInputElement('source-amount');
+    const activeTgtInput = getInputElement('target-amount');
+
+    if (!activeSrcInput || !activeTgtInput) return;
+
+    const tempCode = sourceCurrencyCode;
+    sourceCurrencyCode = targetCurrencyCode;
+    targetCurrencyCode = tempCode;
+
+    setSelectValue('source-currency', sourceCurrencyCode);
+    setSelectValue('target-currency', targetCurrencyCode);
+
+    const tempVal = activeSrcInput.value;
+    activeSrcInput.value = activeTgtInput.value;
+    activeTgtInput.value = tempVal;
+
+    calculate('left-to-right');
+  });
+</script>

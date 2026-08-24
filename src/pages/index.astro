@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ConverterCard from '../components/ConverterCard.astro';
+import RatesTable from '../components/RatesTable.astro';
+---
+
+<BaseLayout title="Exchange - Rafif Muchsin" description="Exchange (rafifmsn/exchange) is an ultra-low latency currency converter and exchange rates dashboard leveraging a resilient, dual-layer Edge KV and CDN POP caching architecture to deliver real-time currency conversions instantly at the edge.">
+  <main class="min-h-screen bg-background px-6 md:px-12 lg:px-20 pt-8 pb-12 flex flex-col items-center justify-start text-muted-foreground font-primary">
+    <div class="w-full max-w-4xl flex flex-col gap-8">
+
+      <!-- Page Header (Trust Style) -->
+      <div class="space-y-2 text-center md:text-left">
+        <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-foreground font-sans">
+          rafifmsn/exchange
+        </h1>
+        <p class="text-muted-foreground font-sans text-base text-balance">
+          Low-Latency Currency Converter and Exchange Rates Service
+        </p>
+      </div>
+
+      <!-- Error Alert banner (hidden by default, very clean) -->
+      <div id="error-banner" class="hidden p-4 bg-error/10 border border-error/25 text-error-foreground rounded-lg text-xs">
+        <div class="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+          </svg>
+          Service Connection Error
+        </div>
+        <p id="error-message">Failed to fetch local rates. Falling back to public API.</p>
+      </div>
+
+      <!-- Live Converter Widget -->
+      <section aria-label="Currency Converter" class="w-full">
+        <ConverterCard />
+      </section>
+
+      <!-- Detailed Rates Grid -->
+      <section aria-label="Live Exchange Rates Matrix" class="w-full">
+        <RatesTable />
+      </section>
+
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  async function fetchRates() {
+    const errorBanner = document.getElementById('error-banner');
+    const errorMessage = document.getElementById('error-message');
+
+    try {
+      let res = await fetch('/api/rates');
+
+      let data: any = null;
+      let isFallbackNeeded = !res.ok;
+
+      if (res.ok) {
+        data = await res.json();
+        if (data && data.disabled) {
+          isFallbackNeeded = true;
+        }
+      }
+
+      // If backend API is unavailable, disabled, or 404/503 -> Seamless client-side fallback
+      if (isFallbackNeeded) {
+        console.warn(`Edge Function API unavailable or disabled (Status ${res.status}). Falling back to direct Frankfurter API.`);
+
+        const directRes = await fetch('https://api.frankfurter.dev/v2/rates?base=USD');
+        if (!directRes.ok) {
+          throw new Error(`Public API returned status ${directRes.status}`);
+        }
+
+        const rawRates = await directRes.json();
+
+        // Map array response structure to RatesPayload
+        const rates: Record<string, number> = { USD: 1.0 };
+        let providerDate = new Date().toISOString().split('T')[0];
+
+        if (Array.isArray(rawRates)) {
+          rawRates.forEach((item: any) => {
+            if (item && item.quote && typeof item.rate === 'number') {
+              rates[item.quote] = item.rate;
+              providerDate = item.date || providerDate;
+            }
+          });
+        }
+
+        const payload = {
+          base: 'USD',
+          rates,
+          meta: {
+            providerDate,
+            updatedAt: Date.now(),
+            expiresAt: Date.now() + 86400000,
+            stale: false,
+            source: 'upstream-direct-fallback'
+          }
+        };
+
+        window.dispatchEvent(new CustomEvent('rates-updated', { detail: payload }));
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent('rates-updated', { detail: data }));
+
+    } catch (err) {
+      console.error('Failed to load currency rates:', err);
+      if (errorBanner && errorMessage) {
+        errorMessage.textContent = `Error details: ${err instanceof Error ? err.message : String(err)}`;
+        errorBanner.classList.remove('hidden');
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchRates);
+  } else {
+    fetchRates();
+  }
+</script>

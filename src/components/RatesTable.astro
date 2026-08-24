@@ -1,0 +1,225 @@
+---
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from './starwind/table';
+import Input from './starwind/input/Input.astro';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "./starwind/select";
+
+const currencies = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'IDR', name: 'Indonesian Rupiah' },
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'MYR', name: 'Malaysian Ringgit' },
+  { code: 'SGD', name: 'Singapore Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'CNY', name: 'Chinese Yuan' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'KRW', name: 'South Korean Won' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'HKD', name: 'Hong Kong Dollar' },
+  { code: 'NZD', name: 'New Zealand Dollar' },
+  { code: 'PHP', name: 'Philippine Peso' },
+  { code: 'THB', name: 'Thai Baht' },
+  { code: 'TRY', name: 'Turkish Lira' },
+  { code: 'ZAR', name: 'South African Rand' }
+];
+---
+
+<div id="results-container" class="space-y-4 max-w-4xl mx-auto w-full">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-foreground">
+    <div class="flex flex-col gap-2">
+      <h2 class="text-xl font-semibold text-foreground font-sans">Exchange Rates</h2>
+      <div class="text-sm text-muted-foreground font-sans text-balance">
+        Free API access:&nbsp;
+        <a href="https://github.com/rafifmsn/exchange" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">rafifmsn/exchange</a>.
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+      <!-- Search Input -->
+      <Input
+        id="table-search"
+        type="text"
+        placeholder="Filter currencies..."
+        class="w-full sm:w-48 text-sm font-sans pointer-events-none opacity-50"
+      />
+
+      <!-- Table Base Currency Selector -->
+      <Select id="table-base-select" name="table-base-select" defaultValue="USD">
+        <SelectTrigger class="w-32 font-sans pointer-events-none opacity-50" placeholder="USD" />
+        <SelectContent>
+          {currencies.map(c => <SelectItem value={c.code}>{c.code}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto border border-border rounded-xl bg-card shadow-sm">
+    <Table class="w-full">
+      <TableHeader>
+        <TableRow>
+          <TableHead class="font-sans text-muted-foreground">Currency</TableHead>
+          <TableHead class="font-sans text-muted-foreground hidden sm:table-cell">Name</TableHead>
+          <TableHead class="font-sans text-muted-foreground text-right">Rate</TableHead>
+          <TableHead class="font-sans text-muted-foreground text-right">Inverse</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody id="rates-body">
+        <TableRow class="skeleton-row">
+          <TableCell colspan={4} class="text-center text-muted-foreground font-sans py-8 animate-pulse">
+            Loading exchange rates matrix...
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+  </div>
+
+  <!-- Footer Info & Attributions -->
+  <div class="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground font-sans px-2 gap-2">
+    <div class="flex items-center gap-2">
+      <span id="provider-label">provider: frankfurter (ecb)</span>
+      <span id="stale-badge" class="hidden bg-error/10 text-error px-2 py-0.5 rounded-full font-medium text-[10px]">stale fallback</span>
+    </div>
+    <div id="last-updated"></div>
+  </div>
+</div>
+
+<script>
+  import type { RatesPayload } from '../utils/adapter';
+
+  let ratesPayload: RatesPayload | null = null;
+  const currencyNames: Record<string, string> = {
+    USD: 'US Dollar', EUR: 'Euro', GBP: 'British Pound', IDR: 'Indonesian Rupiah',
+    JPY: 'Japanese Yen', MYR: 'Malaysian Ringgit', SGD: 'Singapore Dollar',
+    AUD: 'Australian Dollar', CAD: 'Canadian Dollar', CNY: 'Chinese Yuan',
+    CHF: 'Swiss Franc', KRW: 'South Korean Won', INR: 'Indian Rupee',
+    HKD: 'Hong Kong Dollar', NZD: 'New Zealand Dollar', PHP: 'Philippine Peso',
+    THB: 'Thai Baht', TRY: 'Turkish Lira', ZAR: 'South African Rand'
+  };
+
+  // Helper function to get the actual native input element inside Starwind wrapper
+  function getInputElement(id: string): HTMLInputElement | null {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    if (el.tagName === 'INPUT') return el as HTMLInputElement;
+    return el.querySelector('input');
+  }
+
+  // Helpers to interact with Starwind Select components programmatically
+
+  function enableSelect(id: string) {
+    const root = document.getElementById(id);
+    if (!root) return;
+    const trigger = root.querySelector('[data-slot="select-trigger"]');
+    if (trigger) {
+      trigger.classList.remove('pointer-events-none', 'opacity-50');
+    }
+  }
+
+  let activeBaseCurrency = 'USD';
+
+  const tbody = document.getElementById('rates-body') as HTMLTableSectionElement;
+  const baseSelect = document.getElementById('table-base-select');
+  const lastUpdated = document.getElementById('last-updated') as HTMLDivElement;
+  const staleBadge = document.getElementById('stale-badge') as HTMLSpanElement;
+
+  function renderTable() {
+    if (!ratesPayload || !tbody) return;
+
+    const baseRateInUSD = ratesPayload.rates[activeBaseCurrency];
+
+    if (!baseRateInUSD) return;
+
+    let html = '';
+    const searchInput = getInputElement('table-search');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    Object.keys(currencyNames).forEach(code => {
+      const name = currencyNames[code];
+
+      if (query && !code.toLowerCase().includes(query) && !name.toLowerCase().includes(query)) {
+        return;
+      }
+
+      const rateInUSD = ratesPayload!.rates[code];
+      if (rateInUSD === undefined) return;
+
+      const rate = rateInUSD / baseRateInUSD;
+      const inverse = 1 / rate;
+
+      html += `
+        <tr class="hover:bg-muted/50 transition-colors border-b border-border/50">
+          <td class="px-6 py-4 font-semibold text-foreground font-sans">${code}</td>
+          <td class="px-6 py-4 text-muted-foreground font-sans hidden sm:table-cell">${name}</td>
+          <td class="px-6 py-4 text-right font-mono text-foreground font-medium">${rate.toFixed(6)}</td>
+          <td class="px-6 py-4 text-right font-mono text-muted-foreground">${inverse.toFixed(6)}</td>
+        </tr>
+      `;
+    });
+
+    if (html === '') {
+      html = `
+        <tr>
+          <td colspan="4" class="px-6 py-8 text-center text-muted-foreground font-sans">
+            No currencies match "${query}"
+          </td>
+        </tr>
+      `;
+    }
+
+    tbody.innerHTML = html;
+  }
+
+  window.addEventListener('rates-updated', ((e: CustomEvent) => {
+    ratesPayload = e.detail;
+    if (!ratesPayload) return;
+
+    const searchInput = getInputElement('table-search');
+    if (searchInput) {
+      searchInput.classList.remove('pointer-events-none', 'opacity-50');
+    }
+    enableSelect('table-base-select');
+
+    // Update provider label with source description
+    const providerLabel = document.getElementById('provider-label');
+    if (providerLabel && ratesPayload.meta && ratesPayload.meta.source) {
+      const source = ratesPayload.meta.source;
+      let suffix = '';
+      if (source === 'cache-hit') suffix = ', cached';
+      else if (source === 'kv-hit') suffix = ', kv';
+      else if (source === 'upstream-fetch') suffix = ', direct';
+      else if (source === 'upstream-direct-fallback') suffix = ', fallback';
+
+      providerLabel.textContent = `provider: frankfurter (ecb${suffix})`;
+    }
+
+    if (lastUpdated) {
+      const dateStr = ratesPayload.meta.providerDate;
+      const localTime = new Date(ratesPayload.meta.updatedAt).toLocaleDateString();
+      lastUpdated.innerHTML = `date: ${dateStr} | updated: ${localTime}`;
+    }
+
+    if (staleBadge && ratesPayload.meta.stale) {
+      staleBadge.classList.remove('hidden');
+    }
+
+    renderTable();
+  }) as EventListener);
+
+  const activeSearchInput = getInputElement('table-search');
+  activeSearchInput?.addEventListener('input', renderTable);
+  
+  baseSelect?.addEventListener('starwind:value-change', ((e: Event) => {
+    const detail = (e as CustomEvent<{ value: string | null }>).detail;
+    if (detail && detail.value) {
+      activeBaseCurrency = detail.value;
+      renderTable();
+    }
+  }) as EventListener);
+</script>

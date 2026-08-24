@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+.prose h1,
+.prose h2 {
+  font-size: 1.25rem !important;
+}
+
+.prose h3 {
+  font-size: 1.05rem !important;
+}
+
+.prose h4,
+.prose h5{
+  font-size: 0.925rem !important;
+}
+
+.prose img {
+  margin: 0 auto;
+}
+
+/* Scoped Responsive Markdown Table Layout Fix */
+.prose table {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+.prose table th,
+.prose table td {
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem !important;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose table th {
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 2px solid var(--border);
+  background-color: var(--card);
+}
+
+.prose table tr:nth-child(even) {
+  background-color: var(--card);
+}
+
+.prose table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Mobile-first prose styles (under 768px viewports) */
+.prose p { font-size: 0.925rem; margin-bottom: 1.25em; line-height: 1.65; color: var(--muted-foreground); }
+.prose h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.8em; color: var(--foreground); line-height: 1.2; }
+.prose h2 { font-size: 1.35rem; font-weight: 600; margin-top: 1.75em; margin-bottom: 0.8em; color: var(--foreground); }
+.prose h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.5em; margin-bottom: 0.6em; color: var(--foreground); }
+.prose a { color: var(--foreground); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+.prose a:hover { color: var(--muted-foreground); }
+.prose ul { list-style-type: disc; padding-left: 1.25em; font-size: 0.925rem; margin-bottom: 1.25em; color: var(--muted-foreground); }
+.prose ol { list-style-type: decimal; padding-left: 1.25em; font-size: 0.925rem; margin-bottom: 1.25em; color: var(--muted-foreground); }
+.prose li { margin-bottom: 0.5em; }
+.prose li:last-child { margin-bottom: 0; }
+.prose li p { margin-bottom: 0 !important; margin-top: 0 !important; }
+.prose li p + p { margin-top: 0.75em !important; }
+
+.prose :not(pre) > code {
+  background-color: var(--muted);
+  color: var(--foreground);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.8em;
+}
+
+/* Shiki Code block wrapper styling - Mobile */
+.prose pre {
+  position: relative;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--card) !important;
+  border: 1px solid var(--border);
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  overflow: auto;
+  max-height: 400px;
+}
+
+/* Hide default Shiki/Rehype copy buttons if injected */
+.prose pre button.copy,
+.prose pre .copy,
+.prose pre button.shiki-copy-button,
+.prose pre button.rehype-pretty-copy,
+.prose pre > button:not(.your-custom-button-class),
+.prose pre button[aria-label*="copy"],
+.prose pre button[class*="copy"] {
+  display: none !important;
+}
+
+.prose pre code {
+  white-space: pre !important;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  font-size: 0.8rem;
+}
+
+/* Smooth scrollbar for a better look */
+.prose pre::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.prose pre::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.prose pre::-webkit-scrollbar-corner {
+  background-color: var(--card);
+}
+
+.prose pre::-webkit-scrollbar-track {
+  background-color: var(--card);
+  border-radius: 0.5rem;
+}
+
+/* Tablet & Desktop sizes (md: min-width 768px) */
+@media (min-width: 768px) {
+  .prose table th,
+  .prose table td {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  .prose p { font-size: 1rem; line-height: 1.75; }
+  .prose h1 { font-size: 2.25rem; }
+  .prose h2 { font-size: 1.5rem; }
+  .prose h3 { font-size: 1.25rem; }
+  .prose ul,
+  .prose ol { font-size: 1rem; padding-left: 1.5em; }
+  .prose :not(pre) > code { font-size: 0.875em; }
+  .prose pre { padding: 1.25rem; border-radius: 0.75rem; max-height: 500px; }
+  .prose pre code { font-size: 0.875rem; }
+}

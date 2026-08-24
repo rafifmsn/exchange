@@ -1,0 +1,45 @@
+---
+import { Font } from 'astro:assets';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const {
+  title = 'Exchange - Rafif Muchsin',
+  description = 'Exchange (rafifmsn/exchange) is an ultra-low latency currency converter and exchange rates dashboard leveraging a resilient, dual-layer Edge KV and CDN POP caching architecture to deliver real-time currency conversions instantly at the edge.',
+  ogImage = '/og.png'
+} = Astro.props;
+
+const pathname = Astro.url.pathname;
+const canonicalURL = new URL(pathname.replace(/\.html$/, ''), Astro.site || 'https://exchange.edgeone.app');
+---
+
+<Font cssVariable="--font-sans" />
+<Font cssVariable="--font-mono" />
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalURL} />
+
+<meta property="og:type" content="website" />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={new URL(ogImage, Astro.url)} />
+
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={canonicalURL} />
+<meta property="twitter:title" content={title} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={new URL(ogImage, Astro.url)} />
+
+<!-- Content Security Policy to allow Umami analytics future integration (only in production) -->
+{import.meta.env.PROD && (
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://analytics.rafifmsn.com; connect-src 'self' https://analytics.rafifmsn.com https://api.frankfurter.dev; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self';" />
+)}
