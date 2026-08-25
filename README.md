@@ -120,31 +120,7 @@ pnpm preview
 
 ## Cloud Setup & Deployment
 
-To host this project on **Tencent Cloud EdgeOne**:
-
-### 1. EdgeOne Pages Configuration
-1. Link your repository to **Tencent Cloud EdgeOne Pages**.
-2. Configure the build parameters:
-   * **Build Command:** `pnpm build`
-   * **Output Directory:** `dist`
-
-### 2. Edge KV Namespace Setup (Optional)
-To set up L2 global caching (protects upstream provider limits):
-1. In the EdgeOne Console, create a new KV namespace (e.g. `CURRENCY_STORE`).
-2. Bind the namespace to your Pages project under the environment variable name: **`EXCHANGE_STORE`**.
-*Note: If you omit this step, the Edge Function will automatically detect the absence of the binding and fallback to upstream direct fetches. It is fully operational and safe to host without KV.*
-
-### 3. Environment Controls & Delivery Modes
-Configure the Edge Function via environment variables to manage billing and cache topology:
-
-* **`DISABLE_API`** (Default: `false`): Returns `503 Service Unavailable`, forcing the client UI to query Frankfurter directly (0 Edge compute cost, 0 KV billing).
-* **`DISABLE_KV`** (Default: `false`): Bypasses Edge KV reads and writes completely, relying solely on L1 CDN Cache memory.
-* **`DISABLE_CDN_CACHE`** (Default: `false`): Disables L1 POP caching, forcing `Cache-Control: no-store`.
-
-Data Delivery Topology Summary:
-* **L1 CDN Cache Mode (`cached`):** Rates are served directly from POP RAM memory (0ms V8 execution time, 0 KV cost).
-* **L2 KV Mode (`kv`):** Rates are retrieved from globally-replicated Edge KV when hitting a cold POP node.
-* **Direct Fallback Mode (`fallback`):** Triggered automatically on local dev, network errors, or when `DISABLE_API=true`. The browser queries Frankfurter directly from the client.
+For details on how to deploy this project, configure the Layer 1 CDN POP Caching, bind the Layer 2 Edge KV Store, or manage caching topologies via environment switches, please refer to the [Cloud Setup & Deployment Guide](./docs/deployment.md).
 
 ## Performance & Latency Benchmarks
 
