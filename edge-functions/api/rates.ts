@@ -31,10 +31,10 @@ export async function onRequestGet(context: any) {
                     origin.includes('localhost') || 
                     origin.includes('127.0.0.1') || 
                     origin.includes('edgeone.app') || 
-                    origin.includes('rafifmsn.com') ||
+                    origin.includes('mvc.my.id') ||
                     (referer && (
                       referer.includes('edgeone.app') || 
-                      referer.includes('rafifmsn.com') || 
+                      referer.includes('mvc.my.id') || 
                       referer.includes('localhost')
                     ));
 

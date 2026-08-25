@@ -59,11 +59,12 @@ import RatesTable from '../components/RatesTable.astro';
         if (data && data.disabled) {
           isFallbackNeeded = true;
         } else if (data && data.meta) {
-          // Detect dynamic L1 POP cache headers (Age or X-Cache)
+          // Detect dynamic L1 POP cache headers (Age, X-Cache, or Tencent-specific eo-cache-status)
           const ageHeader = res.headers.get('Age');
           const xCacheHeader = res.headers.get('X-Cache');
+          const eoCacheHeader = res.headers.get('eo-cache-status');
           const hasAge = ageHeader && parseInt(ageHeader, 10) > 0;
-          const isL1Hit = xCacheHeader === 'HIT' || hasAge;
+          const isL1Hit = xCacheHeader === 'HIT' || eoCacheHeader === 'HIT' || hasAge;
 
           if (isL1Hit) {
             data.meta.source = 'cache-hit';

@@ -26,7 +26,7 @@ flowchart TD
 
 ### Ingress Domain Validation
 To protect the Edge Function from hotlinking and compute quota abuse, the ingress controller validates incoming request metadata (origins and referers) before parsing payloads:
-* Supported origins include `localhost`, loopbacks, default `*.edgeone.app` hosts, and custom `*.rafifmsn.com` subdomains.
+* Supported origins include `localhost`, loopbacks, default `*.edgeone.app` hosts, and custom `*.mvc.my.id` subdomains.
 * Requests violating allowed origins or referer checks are blocked at the edge with an HTTP `403 Forbidden` response.
 
 ## 2. Dual-Layer Caching Topology

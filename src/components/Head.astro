@@ -41,5 +41,5 @@ const canonicalURL = new URL(pathname.replace(/\.html$/, ''), Astro.site || 'htt
 
 <!-- Content Security Policy to allow Umami analytics future integration (only in production) -->
 {import.meta.env.PROD && (
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://analytics.rafifmsn.com; connect-src 'self' https://analytics.rafifmsn.com https://api.frankfurter.dev; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://analytics.mvc.my.id; connect-src 'self' https://analytics.mvc.my.id https://api.frankfurter.dev; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self';" />
 )}
