@@ -128,8 +128,6 @@ The application features an automated global benchmarking tool powered by the [G
 
 ![Benchmark Results](./multi-region-latency.png)
 
-To run the benchmarks yourself:
-* **Global Benchmark:** `node scripts/benchmark.js`
-* **Local Benchmark:** `bash scripts/benchmark_local.sh`
+> The elevated TTFB observed for US static targets reflects cold L1 POP cache misses triggering origin pulls, which normalize to sub-30ms steady-state delivery once the edge nodes are primed.
 
 For the complete multi-region timing tables and a detailed architectural breakdown, see the [Global Latency Report](./docs/benchmark.md).
