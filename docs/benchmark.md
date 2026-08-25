@@ -15,11 +15,11 @@ The measurements are triggered programmatically using the [Globalping API](https
 ### Run Commands
 * **Global Benchmark (via Globalping):**
   ```bash
-  node scripts/benchmark.js
+  BENCHMARK_HOST=your-custom-domain.com FALLBACK_HOST=your-fallback-domain.dev node scripts/benchmark.js
   ```
-* **Local Benchmark (via curl):**
+* **Local Benchmark (via Node):**
   ```bash
-  bash scripts/benchmark_local.sh
+  BENCHMARK_HOST=your-custom-domain.com FALLBACK_HOST=your-fallback-domain.dev node scripts/benchmark_local.js
   ```
 
 ## 2. Global Latency Results (Averages in Milliseconds)
@@ -61,8 +61,6 @@ Below are the warm run metrics collected from 7 representative global locations:
 | Brazil | 908 ms | 10 ms | 5 ms | 923 ms |
 | Australia | 137 ms | 267 ms | 143 ms | 547 ms |
 | Japan | 247 ms | 103 ms | 57 ms | 407 ms |
-
-> Note: The Edge Function now operates with an active L1 POP cache on the custom domain. As seen in the metrics, after the edge nodes warm up, the server response time (TTFB) drops to **5 ms – 29 ms** globally, providing near-instant cache delivery.
 
 ### Target D: Direct Upstream (Frankfurter API)
 

@@ -10,10 +10,13 @@
  * 4. Direct Upstream (Frankfurter API)
  */
 
+const HOST = process.env.BENCHMARK_HOST || 'your-custom-domain.com';
+const FALLBACK_HOST = process.env.FALLBACK_HOST || 'your-fallback-domain.dev';
+
 const TARGETS = [
   {
     name: 'Static Site (With Edge)',
-    host: 'exchange.mvc.my.id',
+    host: HOST,
     options: {
       request: { path: '/', method: 'GET' },
       protocol: 'HTTPS',
@@ -21,7 +24,7 @@ const TARGETS = [
   },
   {
     name: 'Static Site (Fallback)',
-    host: 'exchange-dpr8nde7nktf.edgeone.dev',
+    host: FALLBACK_HOST,
     options: {
       request: { path: '/', method: 'GET' },
       protocol: 'HTTPS',
@@ -29,7 +32,7 @@ const TARGETS = [
   },
   {
     name: 'Edge Function /api/rates',
-    host: 'exchange.mvc.my.id',
+    host: HOST,
     options: {
       request: { path: '/api/rates', method: 'GET' },
       protocol: 'HTTPS',
@@ -124,10 +127,10 @@ function processResults(results) {
   for (const r of results) {
     const country = r.probe.country;
     const label = LOCATIONS.find(l => l.country === country)?.label || country;
-    
+
     if (r.result && r.result.statusCode === 200 && r.result.timings) {
       const t = r.result.timings;
-      
+
       if (!processed[label]) {
         processed[label] = {
           dns: [],
@@ -137,7 +140,7 @@ function processResults(results) {
           total: [],
         };
       }
-      
+
       processed[label].dns.push(t.dns || 0);
       processed[label].tcp.push(t.tcp || 0);
       processed[label].tls.push(t.tls || 0);
