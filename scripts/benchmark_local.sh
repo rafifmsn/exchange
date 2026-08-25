@@ -4,9 +4,9 @@
 # This script uses curl to measure latency metrics from your local machine.
 
 URLS=(
-  "Static Site 1 (With Edge):https://exchange-dp9tr2r5r4qw.edgeone.dev/"
-  "Static Site 2 (Fallback):https://exchange-dpikuojd59b4.edgeone.dev/"
-  "Edge Function /api/rates:https://exchange-dp9tr2r5r4qw.edgeone.dev/api/rates"
+  "Static Site (With Edge):https://exchange.mvc.my.id/"
+  "Static Site (Fallback):https://exchange-dpr8nde7nktf.edgeone.dev/"
+  "Edge Function /api/rates:https://exchange.mvc.my.id/api/rates"
   "Direct Upstream (Frankfurter):https://api.frankfurter.dev/v2/rates?base=USD"
 )
 

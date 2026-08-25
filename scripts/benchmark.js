@@ -12,16 +12,16 @@
 
 const TARGETS = [
   {
-    name: 'Static Site 1 (With Edge)',
-    host: 'exchange-dp9tr2r5r4qw.edgeone.dev',
+    name: 'Static Site (With Edge)',
+    host: 'exchange.mvc.my.id',
     options: {
       request: { path: '/', method: 'GET' },
       protocol: 'HTTPS',
     },
   },
   {
-    name: 'Static Site 2 (Fallback)',
-    host: 'exchange-dpikuojd59b4.edgeone.dev',
+    name: 'Static Site (Fallback)',
+    host: 'exchange-dpr8nde7nktf.edgeone.dev',
     options: {
       request: { path: '/', method: 'GET' },
       protocol: 'HTTPS',
@@ -29,7 +29,7 @@ const TARGETS = [
   },
   {
     name: 'Edge Function /api/rates',
-    host: 'exchange-dp9tr2r5r4qw.edgeone.dev',
+    host: 'exchange.mvc.my.id',
     options: {
       request: { path: '/api/rates', method: 'GET' },
       protocol: 'HTTPS',
