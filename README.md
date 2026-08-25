@@ -14,7 +14,7 @@
   </a>
 </p>
 
-An ultra-low latency currency converter and real-time exchange rates dashboard. This project is opinionated and specifically architected to run on **Tencent Cloud EdgeOne** (Pages, Serverless Edge Functions, and Edge KV).
+<p align="center">An ultra-low latency currency converter and real-time exchange rates dashboard. This project is opinionated and specifically architected to run on Tencent Cloud EdgeOne (Pages, Serverless Edge Functions, and Edge KV).</p>
 
 ## Project Overview
 
@@ -60,6 +60,7 @@ pnpm preview
 │   └── api/
 │       └── rates.ts         # Serverless endpoint handler
 ├── public/                  # Static assets (favicons, OG images)
+├── scripts/                 # Performance benchmarking utilities (local & global)
 ├── src/
 │   ├── components/          # Astro UI Components
 │   │   ├── starwind/        # Ported Starwind UI primitives (Table, Input, Select)
@@ -133,23 +134,26 @@ To set up L2 global caching (protects upstream provider limits):
 2. Bind the namespace to your Pages project under the environment variable name: **`EXCHANGE_STORE`**.
 *Note: If you omit this step, the Edge Function will automatically detect the absence of the binding and fallback to upstream direct fetches. It is fully operational and safe to host without KV.*
 
-### 3. Edge Rate Limiting Setup (Optional)
-To block traffic spikes and automated scrapers at the Edge POP layer:
-1. In the EdgeOne Console, navigate to the **Rate Limiting** section.
-2. Add a rule targeting `/api/rates`:
-   * **Limit:** 10 requests / 1 minute per client IP.
-   * **Action:** Drop / Block.
+### 3. Environment Controls & Delivery Modes
+Configure the Edge Function via environment variables to manage billing and cache topology:
 
-### 4. Master Kill-Switches & Environment Controls
-To protect your cloud account from unexpected billing or credit card charges, the Edge Function supports environment variable kill-switches configured via `.env` or the EdgeOne Console:
+* **`DISABLE_API`** (Default: `false`): Returns `503 Service Unavailable`, forcing the client UI to query Frankfurter directly (0 Edge compute cost, 0 KV billing).
+* **`DISABLE_KV`** (Default: `false`): Bypasses Edge KV reads and writes completely, relying solely on L1 CDN Cache memory.
+* **`DISABLE_CDN_CACHE`** (Default: `false`): Disables L1 POP caching, forcing `Cache-Control: no-store`.
 
-| Environment Variable | Default | Description |
-| :--- | :--- | :--- |
-| **`DISABLE_API`** | `false` | **Master Kill Switch.** When set to `true`, the Edge Function returns `503 Service Unavailable`. The client UI seamlessly falls back to querying the public API directly. **0 Edge CPU cost, 0 KV touches.** |
-| **`DISABLE_KV`** | `false` | **KV Storage Switch.** When set to `true`, the Edge Function completely bypasses Edge KV reads and writes, relying solely on L1 CDN Cache memory. |
-| **`DISABLE_CDN_CACHE`** | `false` | **Cache Control Switch.** When set to `true`, forces `Cache-Control: no-store` headers to disable Edge POP caching. |
+Data Delivery Topology Summary:
+* **L1 CDN Cache Mode (`cached`):** Rates are served directly from POP RAM memory (0ms V8 execution time, 0 KV cost).
+* **L2 KV Mode (`kv`):** Rates are retrieved from globally-replicated Edge KV when hitting a cold POP node.
+* **Direct Fallback Mode (`fallback`):** Triggered automatically on local dev, network errors, or when `DISABLE_API=true`. The browser queries Frankfurter directly from the client.
 
-> **Note on Data Delivery Modes:**
-> * **CDN Cache Mode (`provider: frankfurter (ecb, cached)`):** Serves rates directly from POP RAM memory (0ms V8 execution time, 0 KV cost).
-> * **KV Mode (`provider: frankfurter (ecb, kv)`):** Serves rates from global Edge KV storage when hitting a cold POP node.
-> * **Direct / Fallback Mode (`provider: frankfurter (ecb, fallback)`):** Triggered when `DISABLE_API=true`, local development, or network errors occur. The client fetches directly from Frankfurter API, ensuring 100% UI uptime.
+## Performance & Latency Benchmarks
+
+The application features an automated global benchmarking tool powered by the [Globalping API](https://globalping.io). It measures latencies, DNS lookups, TCP/TLS handshakes, and TTFB from diverse regions around the world.
+
+![Benchmark Results](./multi-region-latency.png)
+
+To run the benchmarks yourself:
+* **Global Benchmark:** `node scripts/benchmark.js`
+* **Local Benchmark:** `bash scripts/benchmark_local.sh`
+
+For the complete multi-region timing tables and a detailed architectural breakdown, see the [Global Latency Report](./docs/benchmark.md).

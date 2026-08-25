@@ -2,8 +2,6 @@
 
 This document outlines the system architecture, data flow pipelines, and design decisions implemented in `rafifmsn/exchange`.
 
----
-
 ## 1. High-Level System Flow & Ingress
 
 The application utilizes a decoupled architecture separating static assets from dynamic serverless API calls, maximizing edge performance and ensuring high resiliency.
@@ -11,7 +9,7 @@ The application utilizes a decoupled architecture separating static assets from 
 ```mermaid
 flowchart TD
     Client["Client Browser"] -->|HTTP/HTTPS| EdgePOP["Edge CDN POP Cache<br/>(L1 Memory Cache)"]
-    EdgePOP -->|Cache Hit (0ms)| Client
+    EdgePOP -->|"Cache Hit (0ms)"| Client
     EdgePOP -->|Cache Miss| EdgeFunc["Edge Function /api/rates<br/>(V8 Serverless Ingress)"]
     EdgeFunc -->|Query Cache| EdgeKV[("Edge KV Storage<br/>(L2 Persistent Cache)")]
     EdgeFunc -->|Fetch Miss| Upstream["Upstream Frankfurter API<br/>(ECB Source)"]
@@ -31,11 +29,9 @@ To protect the Edge Function from hotlinking and compute quota abuse, the ingres
 * Supported origins include `localhost`, loopbacks, default `*.edgeone.app` hosts, and custom `*.rafifmsn.com` subdomains.
 * Requests violating allowed origins or referer checks are blocked at the edge with an HTTP `403 Forbidden` response.
 
----
-
 ## 2. Dual-Layer Caching Topology
 
-To protect the upstream Frankfurter API (limited to 1,000 requests/month) while maintaining sub-millisecond execution times at the POP layer, the app implements a dual-layer caching strategy:
+To prevent hitting the upstream Frankfurter API's rate limits (which are in place to prevent server abuse/overload) and to maintain sub-millisecond execution times at the POP layer, the app implements a dual-layer caching strategy:
 
 ### Layer 1: Ephemeral POP Memory Cache (L1)
 * **Strategy:** Edge caching headers are configured with `Cache-Control: public, s-maxage=86400, max-age=300`.
@@ -45,8 +41,6 @@ To protect the upstream Frankfurter API (limited to 1,000 requests/month) while 
 * **Strategy:** Rates are stored in Tencent EdgeOne Key-Value storage under the namespace bound to `EXCHANGE_STORE` (key: `rates_usd`).
 * **Behavior:** If a request hits a cold CDN POP node (L1 Cache Miss), the Edge Function checks the global L2 Edge KV database. Since KV is globally replicated, this prevents hitting the upstream Frankfurter API.
 * **Resiliency Fallback:** If the `EXCHANGE_STORE` KV namespace is not configured or bound in the cloud console, the edge function automatically bypasses KV operations, fetches from the upstream provider, and relies entirely on L1 POP caching.
-
----
 
 ## 3. Stateless Cache Revalidation & Circuit Breaker
 
@@ -90,14 +84,16 @@ If the upstream Frankfurter API is down or rate-limited:
 * The Edge Function catches the error, marks the metadata attribute `meta.stale = true` and `meta.source = 'kv-hit'`, and returns the stale L2 cache payload.
 * This is returned with a shortened CDN caching window (`Cache-Control: public, s-maxage=300`) to re-attempt fetching once the upstream recovers, avoiding service downtime.
 
----
-
 ## 4. Client-Side Hydration & Event Topology
 
 To guarantee zero monthly quota leaks and fast UI transitions, state management is strictly decoupled from server interactions.
 
-### 1. Single Ingress Fetch
-Upon page load, the client executes a single asynchronous fetch request to `/api/rates`. Once loaded, it caches the payload in browser RAM and broadcasts it via a custom window event:
+### 1. Single Ingress Fetch & Cache Detection
+Upon page load, the client executes a single asynchronous fetch request to `/api/rates`. To dynamically resolve the cache source without stale payload biasing, the client inspects the response headers:
+* If the `Age` header is greater than 0, or `X-Cache` is `HIT`, the client overrides the source metadata to `'cache-hit'`.
+* Otherwise, it accepts the backend's honest `upstream-fetch` or `kv-hit` status.
+
+Once resolved, the client caches the payload in browser RAM and broadcasts it via a custom window event:
 ```javascript
 window.dispatchEvent(new CustomEvent('rates-updated', { detail: payload }));
 ```
