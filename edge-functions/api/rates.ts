@@ -103,8 +103,8 @@ export async function onRequestGet(context: any) {
     const rawRates = await res.json();
     const freshPayload = transformUpstream(rawRates, 'USD');
 
-    // Tag source metadata
-    freshPayload.meta.source = KV ? 'cache-hit' : 'upstream-fetch';
+    // Tag source metadata (honestly identifies that this run fetched from upstream)
+    freshPayload.meta.source = 'upstream-fetch';
 
     // Save to KV asynchronously if KV is enabled & bound
     if (KV) {
